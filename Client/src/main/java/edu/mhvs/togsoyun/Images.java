@@ -13,9 +13,9 @@ public class Images {
     public Images() throws IOException {
         inst = new Icon[7];
         for (int i = 0; i < inst.length; i ++) {
-            inst[i] = new ImageIcon(ImageIO.read(getClass().getResource("assets/inst" + (i + 1) + ".png")).getScaledInstance(440, 180, Image.SCALE_SMOOTH));
+            inst[i] = new ImageIcon(ImageIO.read(getClass().getResource("/assets/inst" + (i + 1) + ".png")).getScaledInstance(440, 180, Image.SCALE_SMOOTH));
         }
 
-        scaleLeft = ImageIO.read(new URL("https://static.vecteezy.com/system/resources/thumbnails/009/663/096/small/scale-weight-icon-transparent-free-png.png")).getScaledInstance(300, 300, Image.SCALE_SMOOTH);
+        scaleLeft = ImageIO.read(getClass().getResource("/assets/inst1.png")).getScaledInstance(300, 300, Image.SCALE_SMOOTH);
     }
 }

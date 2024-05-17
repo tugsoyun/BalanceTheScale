@@ -138,7 +138,7 @@ public class ClientScreen extends JPanel implements ActionListener {
     }
 
     public void connect() {
-        String serverAddress = "10.0.0.216";
+        String serverAddress = "localhost";
         int serverPort = 1234;
 
         try {
@@ -149,14 +149,13 @@ public class ClientScreen extends JPanel implements ActionListener {
             out.println(name);
 
             String serverMessage;
-            while ((serverMessage = in.readLine()) != null) {
+            while (true) {
+                serverMessage = in.readLine();
                 System.out.println(serverMessage);
                 if (serverMessage.charAt(0) == 'P') {
-                    players.setText(players.getText() + serverMessage.substring(3) + "<br>");
+                    players.setText(serverMessage);
                 }
             }
-
-            System.out.println("loop ended");
         } catch (UnknownHostException e) {
             System.err.println("Host unkown: " + serverAddress);
             System.exit(1);
@@ -234,7 +233,7 @@ public class ClientScreen extends JPanel implements ActionListener {
                 start.setText("START GAME!");
                 this.add(scrollPane);
 
-                connect();
+                repaint();
             } else {
                 this.remove(scrollPane);
                 this.remove(start);
