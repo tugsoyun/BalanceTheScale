@@ -5,6 +5,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,10 +20,11 @@ public class ClientScreen extends JPanel implements ActionListener {
     private PrintWriter out;
     private Images imgs;
     private JButton[] increase, decrease;
-    private JButton start, back, next, send, left, right;
+    private JButton cont, back, next, send, left, right;
     private JLabel message, instructionLabel;
     private JTextPane players;
     private JScrollPane scrollPane;
+    private JTextField nameText;
     private Color[] colors;
     private String[] instructions;
     private String name, scaleCond;
@@ -30,21 +33,30 @@ public class ClientScreen extends JPanel implements ActionListener {
     private boolean gameOngoing;
 
 
-    public ClientScreen(String name) throws IOException {
+    public ClientScreen() throws IOException {
         this.setLayout(null);
 
-        this.name = name;
-        gameOngoing = false;
-        numBlocks = 5;
-        colors = new Color[]{
-                new Color(225, 93, 93),
-                new Color(241, 170, 126),
-                new Color(162, 199, 125),
-                new Color(138, 222, 211),
-                new Color(164, 156, 236)
-        };
-
         imgs = new Images();
+
+        message = new JLabel("");
+        message.setBounds(300, 25, 400, 50);
+        message.setFont(new Font("Arial", Font.BOLD, 20));
+        message.setHorizontalAlignment(SwingConstants.CENTER);
+
+        cont = new JButton();
+        cont.setBounds(400, 500, 200, 50);
+        cont.setFont(new Font("Arial", Font.BOLD, 20));
+        cont.addActionListener(this);
+
+        nameText = new JTextField();
+        nameText.setBounds(175, 250, 150, 40);
+        nameText.addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) {
+                if (nameText.getText().equals("Enter name...")) {
+                    nameText.setText("");
+                }
+            }
+        });
 
         instructions = new String[] {
                 "<html>Players must work together to balance the scale by placing minerals of different weight on it AND guess the weights of each< mineral to win.</html>",
@@ -56,12 +68,6 @@ public class ClientScreen extends JPanel implements ActionListener {
                 "<html>Only when the scale is balanced, will the players be able to submit their guesses.</html>"
         };
 
-        message = new JLabel("Game Instructions:");
-        message.setBounds(300, 25, 400, 50);
-        message.setFont(new Font("Arial", Font.BOLD, 20));
-        message.setHorizontalAlignment(SwingConstants.CENTER);
-        this.add(message);
-
         instructionLabel = new JLabel();
         instructionLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
         instructionLabel.setFont(new Font("Arial", Font.PLAIN, 20));
@@ -71,14 +77,6 @@ public class ClientScreen extends JPanel implements ActionListener {
         instructionLabel.setVerticalTextPosition(JLabel.BOTTOM);
         instructionLabel.setBackground(new Color(194, 194, 194));
         instructionLabel.setOpaque(true);
-        this.add(instructionLabel);
-        setInstructions(1);
-
-        start = new JButton("PLAY!");
-        start.setBounds(400, 500, 200, 50);
-        start.setFont(new Font("Arial", Font.BOLD, 20));
-        start.addActionListener(this);
-        this.add(start);
 
         back = new JButton("<");
         back.setFont(new Font("Arial", Font.BOLD, 20));
@@ -90,7 +88,6 @@ public class ClientScreen extends JPanel implements ActionListener {
         next.setFont(new Font("Arial", Font.BOLD, 20));
         next.setHorizontalAlignment(SwingConstants.CENTER);
         next.setBounds(825, 260, 30, 30);
-        this.add(next);
         next.addActionListener(this);
 
         players = new JTextPane();
@@ -99,6 +96,8 @@ public class ClientScreen extends JPanel implements ActionListener {
 
         scrollPane = new JScrollPane(players);
         scrollPane.setBounds(50, 25, 300, 350);
+
+        reset();
 
         this.setFocusable(true);
     }
@@ -137,6 +136,81 @@ public class ClientScreen extends JPanel implements ActionListener {
         }
     }
 
+    private void reset() {
+        // phase 1 - setting all necessary variables + starting screen
+        // game title + player enters name
+        this.name = "";
+        gameOngoing = false;
+        numBlocks = 5;
+        colors = new Color[]{
+                new Color(225, 93, 93),
+                new Color(241, 170, 126),
+                new Color(162, 199, 125),
+                new Color(138, 222, 211),
+                new Color(164, 156, 236)
+        };
+
+        message.setText("<html>Welcome to <br>BALANCE THE SCALE!</html>");
+        cont.setText("ENTER");
+
+        this.add(nameText);
+        this.add(message);
+        this.add(cont);
+    }
+
+    private void instructions() {
+        // phase 2 - player can look through instructions
+        // a slide show of instructions
+        this.remove(nameText);
+
+        message.setText("Game Instructions:");
+        cont.setText("PLAY");
+        setInstructions(1);
+
+        this.add(instructionLabel);
+        this.add(next);
+    }
+
+    private void setInstructions(int ind) {
+        instructionLabel.setName("" + ind);
+        instructionLabel.setText(instructions[ind - 1]);
+        instructionLabel.setIcon(Images.inst[ind - 1]);
+    }
+
+    private void waitingRoom() {
+        // phase 3 - player will wait for other players to connect
+        // display all connected players + update as more join
+        // players can choose their avatar
+        this.remove(instructionLabel);
+        this.remove(message);
+        this.remove(back);
+        this.remove(next);
+
+        cont.setText("START GAME!");
+
+        this.add(scrollPane);
+    }
+
+    private void beginGame() {
+        // phase 4 - balance the scale will begin; players will be able to play during turn
+        // block + scale graphics
+        // display current turn
+        this.remove(scrollPane);
+        this.remove(cont);
+
+        gameOngoing = true;
+    }
+
+    private void playerTurn() {
+        // this player's turn
+        // add/remove buttons + end turn button
+
+    }
+
+    private void balancedScale() {
+
+    }
+
     public void connect() {
         String serverAddress = "localhost";
         int serverPort = 1234;
@@ -146,14 +220,21 @@ public class ClientScreen extends JPanel implements ActionListener {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
 
-            out.println(name);
-
             String serverMessage;
-            while (true) {
-                serverMessage = in.readLine();
+            while ((serverMessage = in.readLine()) != null) {
                 System.out.println(serverMessage);
-                if (serverMessage.charAt(0) == 'P') {
-                    players.setText(serverMessage);
+                Character messageCode = serverMessage.charAt(0);
+                serverMessage = serverMessage.substring(3);
+                serverMessage = serverMessage.replace("<br>", "\n");
+
+                switch(messageCode) {
+                    case 'P': // new player has joined -> update textarea
+                        players.setText(serverMessage);
+
+                        break;
+                    case 'G': // game started
+
+                        break;
                 }
             }
         } catch (UnknownHostException e) {
@@ -195,12 +276,6 @@ public class ClientScreen extends JPanel implements ActionListener {
         lTotal = rTotal = lAdd = rAdd = 0;
     }
 
-    private void setInstructions(int ind) {
-        instructionLabel.setName("" + ind);
-        instructionLabel.setText(instructions[ind - 1]);
-        instructionLabel.setIcon(Images.inst[ind - 1]);
-    }
-
     @Override
     public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
@@ -221,24 +296,21 @@ public class ClientScreen extends JPanel implements ActionListener {
 
             if (ind == 2) this.add(back);
             else if (ind == instructions.length) this.remove(next);
-        } else if (source == start) {
-            System.out.println("Started");
-            if (message.getText().contains("Instructions")) {
-                instructionLabel.setText("");
-                this.remove(instructionLabel);
-                this.remove(message);
-                this.remove(back);
-                this.remove(next);
+        } else if (source == cont) {
+            if (cont.getText().equals("ENTER")) {
+                // player entered their name -> instructions
+                this.name = nameText.getText();
 
-                start.setText("START GAME!");
-                this.add(scrollPane);
+                instructions();
+            } else if (cont.getText().equals("PLAY")) {
+                // player finished reading instructions -> wait for other players
+                out.println("N: " + name);
 
-                repaint();
-            } else {
-                this.remove(scrollPane);
-                this.remove(start);
-                System.out.println("game start :D");
-                out.println("Start Game");
+                waitingRoom();
+            } else if (cont.getText().equals("START GAME!")){
+                // started game -> relay message to server
+
+                out.println("G: Game started by " + name);
             }
         }
 

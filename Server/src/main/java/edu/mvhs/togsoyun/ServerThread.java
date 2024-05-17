@@ -20,7 +20,6 @@ public class ServerThread implements Runnable {
         try {
             this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             this.out = new PrintWriter(clientSocket.getOutputStream(), true);
-            this.name = in.readLine();
         } catch (IOException e) {
             System.out.println("Error setting up streams: " + e.getMessage());
             closeEverything();
@@ -31,7 +30,20 @@ public class ServerThread implements Runnable {
         try {
             String clientMessage;
             while ((clientMessage = in.readLine()) != null) {
+                System.out.println(clientMessage);
+                Character messageCode = clientMessage.charAt(0);
+                clientMessage = clientMessage.substring(3);
 
+                switch(messageCode) {
+                    case 'N': // sent name
+                        name = clientMessage;
+                        manager.add(this);
+
+                        break;
+                    case 'G': // game started
+
+                        break;
+                }
             }
         } catch (IOException e) {
             System.out.println(name + " Error reading from client: " + e.getMessage());
@@ -58,7 +70,7 @@ public class ServerThread implements Runnable {
         } catch (IOException e) {
             System.out.println("Error closing streams or socket: " + e.getMessage());
         } finally {
-            manager.removeServerThread(this);
+            if (name != null) manager.removeServerThread(this);
         }
     }
 
@@ -67,6 +79,6 @@ public class ServerThread implements Runnable {
     }
 
     public String toString() {
-        return "Player: " + name;
+        return name;
     }
 }

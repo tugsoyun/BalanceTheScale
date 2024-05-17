@@ -15,14 +15,11 @@ public class Server {
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("New player connected!");
+                System.out.println("New player connected to server!");
 
                 ServerThread serverThread = new ServerThread(clientSocket, game);
                 Thread thread = new Thread(serverThread);
                 thread.start();
-
-                game.add(serverThread);
-                game.announcePlayer(serverThread);
             }
         } catch (IOException e) {
             System.err.println("Could not listen on port " + portNumber);

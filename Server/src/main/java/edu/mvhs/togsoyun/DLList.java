@@ -39,7 +39,6 @@ public class DLList<E> {
     }
 
     public boolean add(E data) {
-        System.out.println(data);
         Node<E> before = tail.prev();
         Node<E> n = new Node<E>(data);
         before.setNext(n);
@@ -141,6 +140,19 @@ public class DLList<E> {
             curr = curr.next();
         }
         s += curr.get() + "]";
+
+        return s;
+    }
+
+    public String playersToString() {
+        Node<E> curr = head.next();
+        String s = "";
+
+        for (int i = 0; i < size - 1; i ++) {
+            s += curr.get().toString() + " <br>";
+            curr = curr.next();
+        }
+        s += curr.get();
 
         return s;
     }
