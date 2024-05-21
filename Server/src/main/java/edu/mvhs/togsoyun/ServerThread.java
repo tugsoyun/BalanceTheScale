@@ -41,8 +41,11 @@ public class ServerThread implements Runnable {
 
                         break;
                     case 'G': // game started
+                        manager.startGame();
 
                         break;
+                    case 'E': // player turn ended
+                        manager.endTurn(clientMessage);
                 }
             }
         } catch (IOException e) {

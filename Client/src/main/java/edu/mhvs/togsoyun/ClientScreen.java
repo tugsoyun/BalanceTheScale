@@ -13,6 +13,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ClientScreen extends JPanel implements ActionListener {
     private Socket socket;
@@ -27,9 +29,10 @@ public class ClientScreen extends JPanel implements ActionListener {
     private JTextField nameText;
     private Color[] colors;
     private String[] instructions;
-    private String name, scaleCond;
-    private int[] blockCount, lBlocks, rBlocks;
-    private int numBlocks, lTotal, rTotal, lAdd, rAdd;
+    private String name, scaleCond, defaultFont, currSide;
+    private MyArrayList<Integer> leftTotal, rightTotal, leftTemp, rightTemp;
+    private int[] blockCount;
+    private int numBlocks;
     private boolean gameOngoing;
 
 
@@ -37,26 +40,20 @@ public class ClientScreen extends JPanel implements ActionListener {
         this.setLayout(null);
 
         imgs = new Images();
+        defaultFont = "Arial";
 
         message = new JLabel("");
         message.setBounds(300, 25, 400, 50);
-        message.setFont(new Font("Arial", Font.BOLD, 20));
+        message.setFont(new Font(defaultFont, Font.BOLD, 20));
         message.setHorizontalAlignment(SwingConstants.CENTER);
 
         cont = new JButton();
         cont.setBounds(400, 500, 200, 50);
-        cont.setFont(new Font("Arial", Font.BOLD, 20));
+        cont.setFont(new Font(defaultFont, Font.BOLD, 20));
         cont.addActionListener(this);
 
         nameText = new JTextField();
-        nameText.setBounds(175, 250, 150, 40);
-        nameText.addFocusListener(new FocusAdapter() {
-            public void focusGained(FocusEvent e) {
-                if (nameText.getText().equals("Enter name...")) {
-                    nameText.setText("");
-                }
-            }
-        });
+        nameText.setBounds(475, 435, 150, 40);
 
         instructions = new String[] {
                 "<html>Players must work together to balance the scale by placing minerals of different weight on it AND guess the weights of each< mineral to win.</html>",
@@ -70,7 +67,7 @@ public class ClientScreen extends JPanel implements ActionListener {
 
         instructionLabel = new JLabel();
         instructionLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        instructionLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+        instructionLabel.setFont(new Font(defaultFont, Font.PLAIN, 20));
         instructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         instructionLabel.setBounds(200, 100, 600, 350);
         instructionLabel.setHorizontalTextPosition(JLabel.CENTER);
@@ -79,13 +76,13 @@ public class ClientScreen extends JPanel implements ActionListener {
         instructionLabel.setOpaque(true);
 
         back = new JButton("<");
-        back.setFont(new Font("Arial", Font.BOLD, 20));
+        back.setFont(new Font(defaultFont, Font.BOLD, 20));
         back.setHorizontalAlignment(SwingConstants.CENTER);
         back.setBounds(145, 260, 30, 30);
         back.addActionListener(this);
 
         next = new JButton(">");
-        next.setFont(new Font("Arial", Font.BOLD, 20));
+        next.setFont(new Font(defaultFont, Font.BOLD, 20));
         next.setHorizontalAlignment(SwingConstants.CENTER);
         next.setBounds(825, 260, 30, 30);
         next.addActionListener(this);
@@ -93,6 +90,16 @@ public class ClientScreen extends JPanel implements ActionListener {
         players = new JTextPane();
         players.setEditable(false);
         players.setText(name + "<br>");
+
+        left = new JButton("Left");
+        left.setFont(new Font(defaultFont, Font.BOLD, 20));
+        left.setBounds(400, 150, 100, 40);
+        left.addActionListener(this);
+
+        right = new JButton("Right");
+        right.setFont(new Font(defaultFont, Font.BOLD, 20));
+        right.setBounds(700, 150, 100, 40);
+        right.addActionListener(this);
 
         scrollPane = new JScrollPane(players);
         scrollPane.setBounds(50, 25, 300, 350);
@@ -112,6 +119,12 @@ public class ClientScreen extends JPanel implements ActionListener {
         super.paintComponent(g);
 
         setBackground(new Color(214, 217, 220));
+
+        if (cont.getText().equals("ENTER")) {
+            g.setColor(new Color(108, 108, 108));
+            g.setFont(new Font(defaultFont, Font.ITALIC, 18));
+            g.drawString("Enter Name:", 370, 460);
+        }
 
         // blocks are always visible
         if (gameOngoing) {
@@ -185,30 +198,76 @@ public class ClientScreen extends JPanel implements ActionListener {
         this.remove(message);
         this.remove(back);
         this.remove(next);
+        this.remove(cont);
 
         cont.setText("START GAME!");
 
         this.add(scrollPane);
     }
 
-    private void beginGame() {
+    private void startGame(int initialBlocks) {
         // phase 4 - balance the scale will begin; players will be able to play during turn
         // block + scale graphics
         // display current turn
+
         this.remove(scrollPane);
         this.remove(cont);
 
         gameOngoing = true;
+
+        scaleCond = "balanced";
+
+        leftTotal = new MyArrayList<>();
+        rightTotal = new MyArrayList<>();
+        blockCount = new int[numBlocks];
+        increase = new JButton[numBlocks];
+        decrease = new JButton[numBlocks];
+        for (int i = 0; i < numBlocks; i ++) {
+            blockCount[i] = initialBlocks;
+
+            increase[i] = new JButton("+");
+            increase[i].setBounds(180, 65 + 75 * i, 20, 20);
+            increase[i].addActionListener(this);
+
+            decrease[i] = new JButton("-");
+            decrease[i].setBounds(50, 65 + 75 * i, 20, 20);
+            decrease[i].addActionListener(this);
+        }
     }
 
     private void playerTurn() {
         // this player's turn
         // add/remove buttons + end turn button
+        currSide = "left";
+        leftTemp = new MyArrayList<>();
+        rightTemp = new MyArrayList<>();
 
+        cont.setText("END TURN");
+        this.add(cont);
+        this.add(left);
+        this.add(right);
+        for (int i = 0; i < numBlocks; i ++) {
+            this.add(decrease[i]);
+            this.add(increase[i]);
+        }
     }
 
-    private void balancedScale() {
-
+    private void endedTurn(String s) {
+        String[] addedBlocks = s.split(";");
+        String[] addedBlocksLeft = addedBlocks[0].split(" ");
+        String[] addedBlocksRight = addedBlocks[1].split(" ");
+        for (String value : addedBlocksLeft) {
+            if (value.length() > 0) {
+                leftTotal.add(Integer.parseInt(value));
+            }
+        }
+        for (String value : addedBlocksRight) {
+            if (value.length() > 0) {
+                rightTotal.add(Integer.parseInt(value));
+            }
+        }
+        System.out.println(leftTotal);
+        System.out.println(rightTotal);
     }
 
     public void connect() {
@@ -225,17 +284,39 @@ public class ClientScreen extends JPanel implements ActionListener {
                 System.out.println(serverMessage);
                 Character messageCode = serverMessage.charAt(0);
                 serverMessage = serverMessage.substring(3);
-                serverMessage = serverMessage.replace("<br>", "\n");
 
                 switch(messageCode) {
                     case 'P': // new player has joined -> update textarea
+                        serverMessage = serverMessage.replace("<br>", "\n");
                         players.setText(serverMessage);
 
                         break;
-                    case 'G': // game started
+                    case 'S': // enough players have joined to start the game
+                        this.add(cont);
 
                         break;
+                    case 'G': // game started
+                        startGame(Integer.parseInt(serverMessage));
+
+                        break;
+                    case 'T': // another player's turn
+                        message.setText(serverMessage);
+                        this.add(message);
+
+                        break;
+                    case 'Y': // your turn
+                        playerTurn();
+
+                        break;
+                    case 'E': // player has ended their turn
+                        endedTurn(serverMessage);
+
+                        break;
+                    case 'B': // balance
+                        System.out.println(serverMessage);
                 }
+
+                repaint();
             }
         } catch (UnknownHostException e) {
             System.err.println("Host unkown: " + serverAddress);
@@ -244,36 +325,6 @@ public class ClientScreen extends JPanel implements ActionListener {
             System.err.println("Couldn't get I/O for the connection to " + serverAddress);
             System.exit(1);
         }
-    }
-
-    public void startGame(int initialBlocks) {
-        gameOngoing = true;
-
-        scaleCond = "balanced";
-
-        blockCount = new int[numBlocks];
-        lBlocks = new int[numBlocks];
-        rBlocks = new int[numBlocks];
-        increase = new JButton[numBlocks];
-        decrease = new JButton[numBlocks];
-
-        for (int i = 0; i < numBlocks; i ++) {
-            blockCount[i] = initialBlocks;
-            lBlocks[i] = 0;
-            rBlocks[i] = 0;
-
-            increase[i] = new JButton("+");
-            increase[i].setBounds(180, 65 + 75 * i, 20, 20);
-            increase[i].addActionListener(this);
-            this.add(increase[i]);
-
-            decrease[i] = new JButton("-");
-            decrease[i].setBounds(50, 65 + 75 * i, 20, 20);
-            decrease[i].addActionListener(this);
-            this.add(decrease[i]);
-        }
-
-        lTotal = rTotal = lAdd = rAdd = 0;
     }
 
     @Override
@@ -309,8 +360,46 @@ public class ClientScreen extends JPanel implements ActionListener {
                 waitingRoom();
             } else if (cont.getText().equals("START GAME!")){
                 // started game -> relay message to server
-
                 out.println("G: Game started by " + name);
+
+            } else if (cont.getText().equals("END TURN")) {
+                // player has ended their turn -> send all their actions to manager
+                this.remove(cont);
+                this.remove(left);
+                this.remove(right);
+                for (int i = 0; i < numBlocks; i ++) {
+                    this.remove(decrease[i]);
+                    this.remove(increase[i]);
+                }
+
+                out.println("E: " + leftTemp + "; " + rightTemp);
+            }
+        } else if (source == left) {
+            currSide = "left";
+        } else if (source == right) {
+            currSide = "right";
+        } else {
+            for (int i = 0; i < numBlocks; i ++) {
+                if (source == decrease[i]) {
+                    // TODO: when there arent enough blocks remove decrease button & vice versa
+                    if (currSide.equals("left")) {
+                        leftTemp.remove(i);
+                    } else {
+                        rightTemp.remove(i);
+                    }
+                    blockCount[i] ++;
+
+                    break;
+                } else if (source == increase[i]) {
+                    if (currSide.equals("left")) {
+                        leftTemp.add(i);
+                    } else {
+                        rightTemp.add(i);
+                    }
+                    blockCount[i] --;
+
+                    break;
+                }
             }
         }
 
