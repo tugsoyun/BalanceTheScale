@@ -46,6 +46,12 @@ public class ServerThread implements Runnable {
                         break;
                     case 'E': // player turn ended
                         manager.endTurn(clientMessage);
+
+                        break;
+                    case 'U': // player entered their guesses
+                        manager.checkGuess(clientMessage, name);
+
+                        break;
                 }
             }
         } catch (IOException e) {

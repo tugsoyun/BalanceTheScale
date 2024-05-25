@@ -22,7 +22,11 @@ public class GameManager {
 
         // announce to all current players that another player has joined
         broadcastMessage("P: " + activeThreads.playersToString());
-        if (activeThreads.size() == 2) broadcastMessage("S: Enough players have joined.");
+        if (activeThreads.size() == 2) {
+            broadcastMessage("S: Enough players have joined.");
+        } else if (activeThreads.size() > 2) {
+            serverThread.getOut().println("S: Enough players have joined.");
+        }
     }
 
     public void startGame() {
@@ -100,16 +104,38 @@ public class GameManager {
         String message = "B: ";
         if (leftWeight > rightWeight) {
             // left
-            message += "Left";
+            message += "left";
         } else if (leftWeight < rightWeight) {
             // right
-            message += "Right";
+            message += "right";
         } else {
             // equal
-            message += "Balanced";
+            message += "balanced";
         }
 
         broadcastMessage(message);
+    }
+
+    public void checkGuess(String s, String name) {
+        String stringNums[] = s.split(" ");
+        int [] guesses = new int[stringNums.length];
+        boolean correct = true;
+        for(int i = 0; i < stringNums.length && correct; i ++) {
+            try {
+                guesses[i] = Integer.parseInt(stringNums[i]);
+                if (guesses[i] != blockWeights[i]) {
+                    correct = false;
+                }
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+        }
+
+        if (correct) {
+            broadcastMessage("C: " + name + " guessed the weight of the blocks correctly - " + s);
+        } else {
+            broadcastMessage("I: " + name + " guessed the weight of the blocks incorrectly - " + s);
+        }
     }
 
     public void broadcastMessage(String message) {

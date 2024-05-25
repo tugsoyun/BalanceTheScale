@@ -13,7 +13,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class ClientScreen extends JPanel implements ActionListener {
@@ -22,28 +21,32 @@ public class ClientScreen extends JPanel implements ActionListener {
     private PrintWriter out;
     private Images imgs;
     private JButton[] increase, decrease;
-    private JButton cont, back, next, send, left, right;
+    private JButton cont, back, next, submitGuesses, left, right;
     private JLabel message, instructionLabel;
     private JTextPane players;
     private JScrollPane scrollPane;
-    private JTextField nameText;
+    private JTextField[] guesses;
+    private JTextField nameText, leftText, rightText;
     private Color[] colors;
+    private Sound sound;
     private String[] instructions;
     private String name, scaleCond, defaultFont, currSide;
     private MyArrayList<Integer> leftTotal, rightTotal, leftTemp, rightTemp;
     private int[] blockCount;
     private int numBlocks;
-    private boolean gameOngoing;
+    private boolean gameOngoing, playerTurn;
 
 
     public ClientScreen() throws IOException {
         this.setLayout(null);
 
+        numBlocks = 5;
         imgs = new Images();
+        sound = new Sound();
         defaultFont = "Arial";
 
         message = new JLabel("");
-        message.setBounds(300, 25, 400, 50);
+        message.setBounds(300, 25, 400, 75);
         message.setFont(new Font(defaultFont, Font.BOLD, 20));
         message.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -89,20 +92,52 @@ public class ClientScreen extends JPanel implements ActionListener {
 
         players = new JTextPane();
         players.setEditable(false);
-        players.setText(name + "<br>");
+        scrollPane = new JScrollPane(players);
+        scrollPane.setBounds(50, 25, 300, 350);
 
         left = new JButton("Left");
         left.setFont(new Font(defaultFont, Font.BOLD, 20));
-        left.setBounds(400, 150, 100, 40);
+        left.setBounds(350, 150, 100, 40);
         left.addActionListener(this);
 
         right = new JButton("Right");
         right.setFont(new Font(defaultFont, Font.BOLD, 20));
-        right.setBounds(700, 150, 100, 40);
+        right.setBounds(825, 150, 100, 40);
         right.addActionListener(this);
 
-        scrollPane = new JScrollPane(players);
-        scrollPane.setBounds(50, 25, 300, 350);
+        leftText = new JTextField();
+        leftText.setEditable(false);
+        leftText.setFont(new Font(defaultFont, Font.BOLD, 20));
+        leftText.setBounds(350, 225, 100, 50);
+
+        rightText = new JTextField();
+        rightText.setEditable(false);
+        rightText.setFont(new Font(defaultFont, Font.BOLD, 20));
+        rightText.setBounds(825, 225, 100, 50);
+
+        submitGuesses = new JButton("Submit Guesses");
+        submitGuesses.setBounds(50, 450, 200, 40);
+        submitGuesses.setFont(new Font(defaultFont, Font.PLAIN, 18));
+        submitGuesses.addActionListener(this);
+
+        increase = new JButton[numBlocks];
+        decrease = new JButton[numBlocks];
+        guesses = new JTextField[numBlocks];
+        for(int i = 0; i < numBlocks; i ++) {
+            increase[i] = new JButton(Images.add);
+            increase[i].setBounds(180, 60 + 75 * i, 25, 25);
+            increase[i].addActionListener(this);
+            increase[i].setBorder(null);
+
+            decrease[i] = new JButton(Images.subtract);
+            decrease[i].setBounds(50, 60 + 75 * i, 25, 25);
+            decrease[i].addActionListener(this);
+            decrease[i].setBorder(null);
+
+            guesses[i] = new JTextField();
+            rightText.setFont(new Font(defaultFont, Font.PLAIN, 18));
+            guesses[i].setBounds(220, 60 + 75 * i, 30, 30);
+        }
 
         reset();
 
@@ -129,21 +164,19 @@ public class ClientScreen extends JPanel implements ActionListener {
         // blocks are always visible
         if (gameOngoing) {
             for (int i = 0; i < numBlocks; i++) {
-                g.setColor(colors[i]);
-                g.fillRect(88, 50 + 75 * i, 50, 50);
+                g.drawImage(Images.blocks[i], 88, 50 + 75 * i, null);
                 g.drawString("X" + blockCount[i], 145, 80 + 75 * i);
             }
 
-
             // draw the scale
             if (scaleCond.equals("balanced")) {
-                g.drawImage(Images.scaleLeft, 500, 250, null);
+                g.drawImage(Images.scaleBalanced, 500, 100, null);
 
             } else if (scaleCond.equals("left")) {
-                g.drawImage(Images.scaleLeft, 500, 250, null);
+                g.drawImage(Images.scaleLeft, 500, 100, null);
 
             } else if (scaleCond.equals("right")) {
-                g.drawImage(Images.scaleLeft, 500, 250, null);
+                g.drawImage(Images.scaleRight, 500, 100, null);
 
             }
         }
@@ -154,7 +187,6 @@ public class ClientScreen extends JPanel implements ActionListener {
         // game title + player enters name
         this.name = "";
         gameOngoing = false;
-        numBlocks = 5;
         colors = new Color[]{
                 new Color(225, 93, 93),
                 new Color(241, 170, 126),
@@ -209,9 +241,15 @@ public class ClientScreen extends JPanel implements ActionListener {
         // phase 4 - balance the scale will begin; players will be able to play during turn
         // block + scale graphics
         // display current turn
+        playerTurn = false;
 
         this.remove(scrollPane);
         this.remove(cont);
+
+        leftText.setText("0 0 0 0 0");
+        rightText.setText("0 0 0 0 0");
+        this.add(leftText);
+        this.add(rightText);
 
         gameOngoing = true;
 
@@ -220,18 +258,8 @@ public class ClientScreen extends JPanel implements ActionListener {
         leftTotal = new MyArrayList<>();
         rightTotal = new MyArrayList<>();
         blockCount = new int[numBlocks];
-        increase = new JButton[numBlocks];
-        decrease = new JButton[numBlocks];
         for (int i = 0; i < numBlocks; i ++) {
             blockCount[i] = initialBlocks;
-
-            increase[i] = new JButton("+");
-            increase[i].setBounds(180, 65 + 75 * i, 20, 20);
-            increase[i].addActionListener(this);
-
-            decrease[i] = new JButton("-");
-            decrease[i].setBounds(50, 65 + 75 * i, 20, 20);
-            decrease[i].addActionListener(this);
         }
     }
 
@@ -239,6 +267,7 @@ public class ClientScreen extends JPanel implements ActionListener {
         // this player's turn
         // add/remove buttons + end turn button
         currSide = "left";
+        playerTurn = true;
         leftTemp = new MyArrayList<>();
         rightTemp = new MyArrayList<>();
 
@@ -249,10 +278,30 @@ public class ClientScreen extends JPanel implements ActionListener {
         for (int i = 0; i < numBlocks; i ++) {
             this.add(decrease[i]);
             this.add(increase[i]);
+
+            if (scaleCond.equals("balanced")) {
+                guesses[i].setText("");
+                this.add(guesses[i]);
+            }
+        }
+        if (scaleCond.equals("balanced")) {
+            this.add(submitGuesses);
         }
     }
 
-    private void endedTurn(String s) {
+    private void endTurn() {
+        this.remove(cont);
+        this.remove(left);
+        this.remove(right);
+        this.remove(submitGuesses);
+        for (int i = 0; i < numBlocks; i ++) {
+            this.remove(decrease[i]);
+            this.remove(increase[i]);
+            this.remove(guesses[i]);
+        }
+    }
+
+    private void updateScale(String s) {
         String[] addedBlocks = s.split(";");
         String[] addedBlocksLeft = addedBlocks[0].split(" ");
         String[] addedBlocksRight = addedBlocks[1].split(" ");
@@ -266,8 +315,32 @@ public class ClientScreen extends JPanel implements ActionListener {
                 rightTotal.add(Integer.parseInt(value));
             }
         }
-        System.out.println(leftTotal);
-        System.out.println(rightTotal);
+
+        // TODO: DELETE ONCE GRAPHICS WORK
+        int b[] = {0,0,0,0,0};
+        for (int i = 0; i < leftTotal.size(); i ++) {
+            b[leftTotal.get(i)] ++;
+        }
+        leftText.setText(b[0] + " " + b[1] + " " + b[2] + " " + b[3] + " " + b[4]);
+        b = new int [] {0,0,0,0,0};
+        for (int i = 0; i < rightTotal.size(); i ++) {
+            b[rightTotal.get(i)] ++;
+        }
+        rightText.setText(b[0] + " " + b[1] + " " + b[2] + " " + b[3] + " " + b[4]);
+    }
+
+    private void endGame() {
+        this.remove(leftText);
+        this.remove(rightText);
+
+        sound.setFile(1);
+        sound.play();
+
+        gameOngoing = false;
+
+        message.setText("Congratulations, you won!");
+        cont.setText("Restart Game");
+        this.add(cont);
     }
 
     public void connect() {
@@ -309,11 +382,32 @@ public class ClientScreen extends JPanel implements ActionListener {
 
                         break;
                     case 'E': // player has ended their turn
-                        endedTurn(serverMessage);
+                        updateScale(serverMessage);
 
                         break;
                     case 'B': // balance
-                        System.out.println(serverMessage);
+                        scaleCond = serverMessage;
+
+                        break;
+                    case 'C': // guessed correctly -> win game
+                        message.setText("<html>" + serverMessage + "</html>");
+
+                        Thread.sleep(5 * 1000); // 5 seconds
+
+                        endGame();
+
+                        break;
+                    case 'I': // guessed incorrectly
+                        message.setText("<html>" + serverMessage + "</html");
+
+                        Thread.sleep(5 * 1000); // 5 seconds
+
+                        if (playerTurn) {
+                            playerTurn = false;
+                            out.println("E: " + leftTemp + "; " + rightTemp);
+                        }
+
+                        break;
                 }
 
                 repaint();
@@ -324,6 +418,8 @@ public class ClientScreen extends JPanel implements ActionListener {
         } catch (IOException e) {
             System.err.println("Couldn't get I/O for the connection to " + serverAddress);
             System.exit(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -364,13 +460,8 @@ public class ClientScreen extends JPanel implements ActionListener {
 
             } else if (cont.getText().equals("END TURN")) {
                 // player has ended their turn -> send all their actions to manager
-                this.remove(cont);
-                this.remove(left);
-                this.remove(right);
-                for (int i = 0; i < numBlocks; i ++) {
-                    this.remove(decrease[i]);
-                    this.remove(increase[i]);
-                }
+                endTurn();
+                playerTurn = false;
 
                 out.println("E: " + leftTemp + "; " + rightTemp);
             }
@@ -378,6 +469,15 @@ public class ClientScreen extends JPanel implements ActionListener {
             currSide = "left";
         } else if (source == right) {
             currSide = "right";
+        } else if (source == submitGuesses) {
+            endTurn();
+
+            String s = "";
+            for(JTextField text : guesses) {
+                s += text.getText() + " ";
+            }
+
+            out.println("U: " + s);
         } else {
             for (int i = 0; i < numBlocks; i ++) {
                 if (source == decrease[i]) {
@@ -391,6 +491,8 @@ public class ClientScreen extends JPanel implements ActionListener {
 
                     break;
                 } else if (source == increase[i]) {
+                    sound.setFile(0);
+                    sound.play();
                     if (currSide.equals("left")) {
                         leftTemp.add(i);
                     } else {
