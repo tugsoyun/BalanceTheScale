@@ -6,7 +6,7 @@ import java.net.Socket;
 
 public class Server {
     public static void main (String[] args) {
-        int portNumber = 1234;
+        int portNumber = 1111;
         GameManager game = new GameManager();
 
         try {

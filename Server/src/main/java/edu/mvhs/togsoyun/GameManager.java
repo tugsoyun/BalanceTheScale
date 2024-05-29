@@ -8,13 +8,19 @@ public class GameManager {
     private int[] blockWeights;
     private ServerThread currPlayer;
     private int currInd, numBlocks, leftWeight, rightWeight;
+    private boolean acceptingPlayers;
 
     public GameManager() {
+        reset();
+    }
+
+    private void reset() {
         activeThreads = new DLList<>();
-        blockWeights = new int[5];
+        numBlocks = 5;
+        blockWeights = new int[numBlocks];
         currPlayer = null;
         currInd = 0;
-        numBlocks = 5;
+        acceptingPlayers = true;
     }
 
     public void add(ServerThread serverThread) {
@@ -33,9 +39,9 @@ public class GameManager {
         // announce to all players that the game has started with the number of blocks
         // dictated by the amount of players
         int blockCount = 5;
-        numBlocks = 5;
         leftWeight = rightWeight = 0;
         int size = activeThreads.size();
+        acceptingPlayers = false;
 
         left = new MyArrayList<>();
         right = new MyArrayList<>();
@@ -48,7 +54,7 @@ public class GameManager {
 
         // randomly set the weights of all the blocks
         MyHashSet<Integer> takenWeights = new MyHashSet<>();    // to prevent the blocks from having the same weights
-        for (int i = 0; i < blockWeights.length; i ++) {
+        for (int i = 0; i < numBlocks; i ++) {
             int random = (int) (Math.random() * 20 + 1);
             while(takenWeights.contains(random)) {
                 random = (int) (Math.random() * 20 + 1);
@@ -131,11 +137,17 @@ public class GameManager {
             }
         }
 
-        if (correct) {
+        if (correct) { // win
             broadcastMessage("C: " + name + " guessed the weight of the blocks correctly - " + s);
-        } else {
+
+            reset();
+        } else { // continue playing
             broadcastMessage("I: " + name + " guessed the weight of the blocks incorrectly - " + s);
         }
+    }
+
+    public boolean isAcceptingPlayers() {
+        return acceptingPlayers;
     }
 
     public void broadcastMessage(String message) {

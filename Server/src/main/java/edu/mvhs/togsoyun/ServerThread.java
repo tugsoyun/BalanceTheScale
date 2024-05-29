@@ -29,7 +29,7 @@ public class ServerThread implements Runnable {
     public void run() {
         try {
             String clientMessage;
-            while ((clientMessage = in.readLine()) != null) {
+            mainloop:while ((clientMessage = in.readLine()) != null) {
                 System.out.println(clientMessage);
                 Character messageCode = clientMessage.charAt(0);
                 clientMessage = clientMessage.substring(3);
@@ -37,7 +37,12 @@ public class ServerThread implements Runnable {
                 switch(messageCode) {
                     case 'N': // sent name
                         name = clientMessage;
-                        manager.add(this);
+                        if (manager.isAcceptingPlayers()) manager.add(this);
+                        else {
+                            System.out.println("Game is not accepting any new players");
+
+                            break mainloop;
+                        }
 
                         break;
                     case 'G': // game started

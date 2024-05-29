@@ -11,7 +11,7 @@ public class Images {
     static Icon[] inst;
     static Icon add, subtract;
     static Image[] blocks;
-    static Image scaleBalanced, scaleLeft, scaleRight;
+    static Image background, welcome, win, lose, scaleBalanced, scaleLeft, scaleRight;
 
     public Images() throws IOException {
         inst = new Icon[7];
@@ -26,8 +26,14 @@ public class Images {
 
         add = new ImageIcon(ImageIO.read(getClass().getResource("/assets/plus.png")).getScaledInstance(25, 25, Image.SCALE_SMOOTH));
         subtract = new ImageIcon(ImageIO.read(getClass().getResource("/assets/minus.png")).getScaledInstance(25, 25, Image.SCALE_SMOOTH));
-        scaleBalanced = ImageIO.read(getClass().getResource("/assets/balanced.png")).getScaledInstance(300, 300, Image.SCALE_SMOOTH);
-        scaleLeft = ImageIO.read(getClass().getResource("/assets/left.png")).getScaledInstance(300, 300, Image.SCALE_SMOOTH);
-        scaleRight = ImageIO.read(getClass().getResource("/assets/right.png")).getScaledInstance(300, 300, Image.SCALE_SMOOTH);
+
+        welcome = ImageIO.read(getClass().getResource("/assets/welcome.jpg")).getScaledInstance(1000, 600, Image.SCALE_SMOOTH);
+        background = ImageIO.read(getClass().getResource("/assets/background.png")).getScaledInstance(1000, 600, Image.SCALE_SMOOTH);
+        win = ImageIO.read(getClass().getResource("/assets/win.png")).getScaledInstance(1000, 600, Image.SCALE_SMOOTH);
+        lose = ImageIO.read(getClass().getResource("/assets/lose.png")).getScaledInstance(1000, 600, Image.SCALE_SMOOTH);
+
+        scaleBalanced = ImageIO.read(getClass().getResource("/assets/balanced.png")).getScaledInstance(621, 300, Image.SCALE_SMOOTH);
+        scaleLeft = ImageIO.read(getClass().getResource("/assets/left.png")).getScaledInstance(621, 300, Image.SCALE_SMOOTH);
+        scaleRight = ImageIO.read(getClass().getResource("/assets/right.png")).getScaledInstance(621, 300, Image.SCALE_SMOOTH);
     }
 }

@@ -72,6 +72,18 @@ public class MyArrayList<E> {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        MyArrayList<E> arr = (MyArrayList<E>) o;
+        if (arr.size() == this.size) {
+            for(int i = 0; i < size; i ++) {
+                if (!this.get(i).equals(arr.get(i))) return false;
+            }
+        } else return false;
+
+        return true;
+    }
+
     public String toString() {
         String string = "";
         for (int i = 0; i < size; i++) {

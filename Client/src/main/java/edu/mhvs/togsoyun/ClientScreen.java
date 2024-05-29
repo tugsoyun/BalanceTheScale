@@ -27,15 +27,14 @@ public class ClientScreen extends JPanel implements ActionListener {
     private JScrollPane scrollPane;
     private JTextField[] guesses;
     private JTextField nameText, leftText, rightText;
-    private Color[] colors;
     private Sound sound;
+    private Image background;
     private String[] instructions;
     private String name, scaleCond, defaultFont, currSide;
     private MyArrayList<Integer> leftTotal, rightTotal, leftTemp, rightTemp;
     private int[] blockCount;
     private int numBlocks;
-    private boolean gameOngoing, playerTurn;
-
+    private boolean gameOngoing, playerTurn, gameWon;
 
     public ClientScreen() throws IOException {
         this.setLayout(null);
@@ -46,17 +45,18 @@ public class ClientScreen extends JPanel implements ActionListener {
         defaultFont = "Arial";
 
         message = new JLabel("");
-        message.setBounds(300, 25, 400, 75);
+        message.setForeground(Color.WHITE);
+        message.setBounds(300, 25, 400, 100);
         message.setFont(new Font(defaultFont, Font.BOLD, 20));
         message.setHorizontalAlignment(SwingConstants.CENTER);
 
         cont = new JButton();
-        cont.setBounds(400, 500, 200, 50);
+        cont.setBounds(550, 435, 100, 40);
         cont.setFont(new Font(defaultFont, Font.BOLD, 20));
         cont.addActionListener(this);
 
         nameText = new JTextField();
-        nameText.setBounds(475, 435, 150, 40);
+        nameText.setBounds(385, 435, 150, 40);
 
         instructions = new String[] {
                 "<html>Players must work together to balance the scale by placing minerals of different weight on it AND guess the weights of each< mineral to win.</html>",
@@ -93,7 +93,7 @@ public class ClientScreen extends JPanel implements ActionListener {
         players = new JTextPane();
         players.setEditable(false);
         scrollPane = new JScrollPane(players);
-        scrollPane.setBounds(50, 25, 300, 350);
+        scrollPane.setBounds(150, 100, 300, 200);
 
         left = new JButton("Left");
         left.setFont(new Font(defaultFont, Font.BOLD, 20));
@@ -153,16 +153,10 @@ public class ClientScreen extends JPanel implements ActionListener {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        setBackground(new Color(214, 217, 220));
-
-        if (cont.getText().equals("ENTER")) {
-            g.setColor(new Color(108, 108, 108));
-            g.setFont(new Font(defaultFont, Font.ITALIC, 18));
-            g.drawString("Enter Name:", 370, 460);
-        }
-
         // blocks are always visible
         if (gameOngoing) {
+            setBackground(Color.BLACK);
+            g.setColor(Color.WHITE);
             for (int i = 0; i < numBlocks; i++) {
                 g.drawImage(Images.blocks[i], 88, 50 + 75 * i, null);
                 g.drawString("X" + blockCount[i], 145, 80 + 75 * i);
@@ -170,15 +164,23 @@ public class ClientScreen extends JPanel implements ActionListener {
 
             // draw the scale
             if (scaleCond.equals("balanced")) {
-                g.drawImage(Images.scaleBalanced, 500, 100, null);
+                g.drawImage(Images.scaleBalanced, 300, 300, null);
 
             } else if (scaleCond.equals("left")) {
-                g.drawImage(Images.scaleLeft, 500, 100, null);
+                g.drawImage(Images.scaleLeft, 300, 300, null);
 
             } else if (scaleCond.equals("right")) {
-                g.drawImage(Images.scaleRight, 500, 100, null);
+                g.drawImage(Images.scaleRight, 300, 300, null);
 
             }
+        } else {
+            g.drawImage(background, 0, 0, null);
+        }
+
+        if (cont.getText().equals("ENTER")) {
+            g.setColor(new Color(108, 108, 108));
+            g.setFont(new Font(defaultFont, Font.ITALIC, 18));
+            g.drawString("Enter Name:", 280, 460);
         }
     }
 
@@ -187,19 +189,12 @@ public class ClientScreen extends JPanel implements ActionListener {
         // game title + player enters name
         this.name = "";
         gameOngoing = false;
-        colors = new Color[]{
-                new Color(225, 93, 93),
-                new Color(241, 170, 126),
-                new Color(162, 199, 125),
-                new Color(138, 222, 211),
-                new Color(164, 156, 236)
-        };
+        gameWon = false;
 
-        message.setText("<html>Welcome to <br>BALANCE THE SCALE!</html>");
         cont.setText("ENTER");
+        background = Images.welcome;
 
         this.add(nameText);
-        this.add(message);
         this.add(cont);
     }
 
@@ -209,9 +204,12 @@ public class ClientScreen extends JPanel implements ActionListener {
         this.remove(nameText);
 
         message.setText("Game Instructions:");
+        cont.setBounds(400, 475, 200, 50);
         cont.setText("PLAY");
         setInstructions(1);
+        background = Images.background;
 
+        this.add(message);
         this.add(instructionLabel);
         this.add(next);
     }
@@ -244,6 +242,7 @@ public class ClientScreen extends JPanel implements ActionListener {
         playerTurn = false;
 
         this.remove(scrollPane);
+        cont.setBounds(150, 500, 200, 50);
         this.remove(cont);
 
         leftText.setText("0 0 0 0 0");
@@ -279,12 +278,12 @@ public class ClientScreen extends JPanel implements ActionListener {
             this.add(decrease[i]);
             this.add(increase[i]);
 
-            if (scaleCond.equals("balanced")) {
+            if (scaleCond.equals("balanced") && !leftTotal.equals(rightTotal)) {
                 guesses[i].setText("");
                 this.add(guesses[i]);
             }
         }
-        if (scaleCond.equals("balanced")) {
+        if (scaleCond.equals("balanced") && !leftTotal.equals(rightTotal)) {
             this.add(submitGuesses);
         }
     }
@@ -329,23 +328,28 @@ public class ClientScreen extends JPanel implements ActionListener {
         rightText.setText(b[0] + " " + b[1] + " " + b[2] + " " + b[3] + " " + b[4]);
     }
 
-    private void endGame() {
-        this.remove(leftText);
-        this.remove(rightText);
-
-        sound.setFile(1);
-        sound.play();
-
+    private void endGame(boolean won) {
+        gameWon = won;
         gameOngoing = false;
 
-        message.setText("Congratulations, you won!");
+
+        if (won) {
+            sound.setFile(1);
+            sound.play();
+            background = Images.win;
+        } else {
+            background = Images.lose;
+        }
+
+        this.remove(leftText);
+        this.remove(rightText);
         cont.setText("Restart Game");
         this.add(cont);
     }
 
     public void connect() {
         String serverAddress = "localhost";
-        int serverPort = 1234;
+        int serverPort = 1111;
 
         try {
             socket = new Socket(serverAddress, serverPort);
@@ -394,7 +398,7 @@ public class ClientScreen extends JPanel implements ActionListener {
 
                         Thread.sleep(5 * 1000); // 5 seconds
 
-                        endGame();
+                        endGame(true);
 
                         break;
                     case 'I': // guessed incorrectly
@@ -464,6 +468,11 @@ public class ClientScreen extends JPanel implements ActionListener {
                 playerTurn = false;
 
                 out.println("E: " + leftTemp + "; " + rightTemp);
+            } else if (cont.getText().equals("Restart Game")) {
+                // restart -> return to waiting room screen
+                out.println("N: " + name);
+
+                waitingRoom();
             }
         } else if (source == left) {
             currSide = "left";
