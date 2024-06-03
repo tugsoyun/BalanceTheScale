@@ -10,18 +10,20 @@ import java.net.URL;
 public class Images {
     static Icon[] inst;
     static Icon add, subtract;
-    static Image[] blocks;
+    static Image[] blocks, miniBlocks;
     static Image background, welcome, win, lose, scaleBalanced, scaleLeft, scaleRight;
 
     public Images() throws IOException {
-        inst = new Icon[7];
+        inst = new Icon[8];
         for (int i = 0; i < inst.length; i ++) {
-            inst[i] = new ImageIcon(ImageIO.read(getClass().getResource("/assets/inst" + (i + 1) + ".png")).getScaledInstance(440, 180, Image.SCALE_SMOOTH));
+            inst[i] = new ImageIcon(ImageIO.read(getClass().getResource("/assets/inst" + (i + 1) + ".png")).getScaledInstance(480, 190, Image.SCALE_SMOOTH));
         }
 
         blocks = new Image[5];
+        miniBlocks = new Image[5];
         for(int i = 0; i < blocks.length; i ++) {
             blocks[i] = ImageIO.read(getClass().getResource("/assets/block" + i + ".png")).getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+            miniBlocks[i] = ImageIO.read(getClass().getResource("/assets/block" + i + ".png")).getScaledInstance(15, 15, Image.SCALE_SMOOTH);
         }
 
         add = new ImageIcon(ImageIO.read(getClass().getResource("/assets/plus.png")).getScaledInstance(25, 25, Image.SCALE_SMOOTH));

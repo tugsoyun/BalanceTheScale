@@ -57,6 +57,14 @@ public class ServerThread implements Runnable {
                         manager.checkGuess(clientMessage, name);
 
                         break;
+                    case 'B': // no blocks left
+                        manager.removeTurn(this);
+
+                        break;
+                    case 'H':
+                        manager.hint();
+
+                        break;
                 }
             }
         } catch (IOException e) {

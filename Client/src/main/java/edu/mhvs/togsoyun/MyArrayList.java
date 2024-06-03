@@ -21,9 +21,11 @@ public class MyArrayList<E> {
     }
 
     public void add(int index, E obj) {
-        if (index >= size) {
-            return;
-        } else if ( size >= capacity) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+
+        if (size >= capacity) {
             increaseCapacity();
         }
         for (int i = size; i > index; i --) {
@@ -36,10 +38,18 @@ public class MyArrayList<E> {
 
     @SuppressWarnings("unchecked")
     public E get(int index) {
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+
         return (E) list[index];
     }
 
     public E remove (int ind) {
+        if (ind < 0 || ind >= size) {
+            throw new IndexOutOfBoundsException("Index: " + ind + ", Size: " + size);
+        }
+
         E removedObj = (E) list[ind];
 
         for (int i = ind; i < size - 1; i ++) {
@@ -67,9 +77,22 @@ public class MyArrayList<E> {
     }
 
     public void set(int i, E obj) {
-        if (i < size) {
-            list[i] = obj;
+        if (i < 0 || i >= size) {
+            throw new IndexOutOfBoundsException("Index: " + i + ", Size: " + size);
         }
+
+        list[i] = obj;
+
+    }
+
+    public boolean contains(E obj) {
+        for (int i = 0; i < size; i ++) {
+            if (obj.equals((E) list[i])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -97,12 +120,12 @@ public class MyArrayList<E> {
     }
 
     public void increaseCapacity () {
-        Object[] tempList = list;
-        list = new Object [capacity * 2];
-        capacity *= 2;
-        for (int i = 0; i < tempList.length; i ++) {
-            list [i] = tempList [i];
+        Object[] tempList = new Object[capacity * 2];
+        for (int i = 0; i < size; i ++) {
+            tempList [i] = list[i];
         }
+        list = tempList;
+        capacity *= 2;
     }
 
     public Object [] getArr () {

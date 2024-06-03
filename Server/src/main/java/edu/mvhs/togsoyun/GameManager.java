@@ -3,9 +3,9 @@ package edu.mvhs.togsoyun;
 import java.util.Arrays;
 
 public class GameManager {
-    private DLList<ServerThread> activeThreads;
+    private DLList<ServerThread> activeThreads, playingThreads;
     private MyArrayList<Integer> left, right;
-    private int[] blockWeights;
+    private int[] blockWeights, leftTotal, rightTotal;
     private ServerThread currPlayer;
     private int currInd, numBlocks, leftWeight, rightWeight;
     private boolean acceptingPlayers;
@@ -16,8 +16,11 @@ public class GameManager {
 
     private void reset() {
         activeThreads = new DLList<>();
+        playingThreads = new DLList<>();
         numBlocks = 5;
         blockWeights = new int[numBlocks];
+        leftTotal = new int[] {0, 0, 0, 0, 0};
+        rightTotal = new int[] {0, 0, 0, 0, 0};
         currPlayer = null;
         currInd = 0;
         acceptingPlayers = true;
@@ -25,6 +28,7 @@ public class GameManager {
 
     public void add(ServerThread serverThread) {
         activeThreads.add(serverThread);
+        playingThreads.add(serverThread);
 
         // announce to all current players that another player has joined
         broadcastMessage("P: " + activeThreads.playersToString());
@@ -67,7 +71,7 @@ public class GameManager {
 
         // announce the turn to the first player
         currInd = 0;
-        currPlayer = activeThreads.get(currInd);
+        currPlayer = playingThreads.get(currInd);
         broadcastMessage("T: " + currPlayer + "'s turn");
         currPlayer.getOut().println("Y: your turn");
     }
@@ -78,8 +82,8 @@ public class GameManager {
         checkBalance(addedBlocks);
 
         // change turn
-        currInd = (currInd + 1) % activeThreads.size();
-        currPlayer = activeThreads.get(currInd);
+        currInd = (currInd + 1) % playingThreads.size();
+        currPlayer = playingThreads.get(currInd);
         broadcastMessage("T: " + currPlayer + "'s turn");
         currPlayer.getOut().println("Y: your turn");
     }
@@ -94,6 +98,7 @@ public class GameManager {
                 int num = Integer.parseInt(value);
 
                 left.add(num);
+                leftTotal[num] ++;
                 leftWeight += blockWeights[num];
             }
         }
@@ -102,6 +107,7 @@ public class GameManager {
                 int num = Integer.parseInt(value);
 
                 right.add(num);
+                rightTotal[num] ++;
                 rightWeight += blockWeights[num];
             }
         }
@@ -116,7 +122,13 @@ public class GameManager {
             message += "right";
         } else {
             // equal
-            message += "balanced";
+            boolean validBalance = false;
+            for(int i = 0; i < numBlocks && !validBalance; i ++) {
+                if (leftTotal[i] != rightTotal[i]) validBalance = true;
+            }
+
+            if (validBalance) message += "balanced";
+            else message += "invalid balance";
         }
 
         broadcastMessage(message);
@@ -146,6 +158,56 @@ public class GameManager {
         }
     }
 
+    public void removeTurn(ServerThread serverThread) { // finished using all blocks -> remove turn
+        playingThreads.remove(serverThread);
+
+        if (playingThreads.size() <= 0) {
+            // game over
+            broadcastMessage("L: All minerals have been used. As such, the players have lost.");
+
+            reset();
+        }
+    }
+
+    public void hint() {
+        String hint = createHint();
+
+        broadcastMessage("H: " + hint);
+    }
+
+    private String blockColor(int ind) {
+        String color;
+
+        switch (ind) {
+            case 1: color = "Orange"; break;
+            case 2: color = "Green"; break;
+            case 3: color = "Blue"; break;
+            case 4: color = "Purple"; break;
+            default: color = "Red"; break;
+        }
+
+        return color;
+    }
+
+    private String createHint() {
+        int ind1 = (int) (Math.random() * 5);
+        int ind2 = (int) (Math.random() * 5);
+        int action = (int) (Math.random() * 2);
+
+        while (ind1 == ind2)  {
+            ind2 = (int) (Math.random() * 5);
+        }
+
+        String hint;
+        if (action == 0) {
+            hint = blockColor(ind1) + "+" + blockColor(ind2) + "=" + (blockWeights[ind1] + blockWeights[ind2]);
+        } else {
+            hint = "|" + blockColor(ind1) + "-" + blockColor(ind2) + "|=" + Math.abs(blockWeights[ind1] - blockWeights[ind2]);
+        }
+
+        return hint;
+    }
+
     public boolean isAcceptingPlayers() {
         return acceptingPlayers;
     }
@@ -164,5 +226,14 @@ public class GameManager {
 
     public void removeServerThread(ServerThread serverThread){
         activeThreads.remove(serverThread);
+
+        if (activeThreads.size() == 0) reset();
+        else if (currPlayer == serverThread) {
+            // change turn
+            currInd = (currInd + 1) % activeThreads.size();
+            currPlayer = activeThreads.get(currInd);
+            broadcastMessage("T: " + currPlayer + "'s turn");
+            currPlayer.getOut().println("Y: your turn");
+        }
     }
 }
